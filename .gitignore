@@ -1,0 +1,9 @@
+*
+!.gitignore
+!makefile
+!src/
+!src/*
+!include/
+!include/*
+!textures/
+!textures/*
