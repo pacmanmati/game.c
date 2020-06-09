@@ -28,17 +28,43 @@ uint32_t EBO, VAO, VBO;
 
 float rot = 0.0f;
 
+// textured + coloured cube
 const float model[] = {
-  // positions          // colors           // texture coords
-  0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   5.0f, 5.0f, // top right
-  0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   5.0f, 0.0f, // bottom right
-  -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-  -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 5.0f  // top left 
+  // near face
+  -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+  0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+  0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+  -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+  // left face
+  // -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+  // -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+  -0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, -1.0f, 1.0f,
+  -0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+  // right face
+  // 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+  // 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 2.0f, 1.0f,
+  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 2.0f, 0.0f,
+  // top face
+  // -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+  // 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+  -0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 2.0f,  
+  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 2.0f,
+  // bottom face
+  // 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+  // -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+  -0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -1.0f,
+  // far face
+  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -1.0f,
+  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -2.0f,
+  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -2.0f,
 };
 
 unsigned int indices[] = {
-  0, 1, 3, // first triangle
-  1, 2, 3  // second triangle
+  // clockwise
+  0, 1, 3, 
 };
 
 // variable timestep for rendering
@@ -46,7 +72,7 @@ void render()
 {
   glClearColor(0.2f, 0.3f, 0.3f, 1.0);
   glClear(GL_COLOR_BUFFER_BIT);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
   SDL_GL_SwapWindow(window);
 }
 
@@ -79,7 +105,6 @@ void handle_input(SDL_Event event)
 	break;
       }
     }
-
   }
 }
 
