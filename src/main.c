@@ -13,8 +13,8 @@
 #include <shader.h>
 #include <shader-program.h>
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+int SCREEN_WIDTH = 640;
+int SCREEN_HEIGHT = 480;
 const int FPS = 60;
 
 const bool CAPPED_FPS = true;
@@ -31,6 +31,11 @@ float yrot = 0.0f;
 
 uint32_t model_loc;
 mat4 model;
+
+uint32_t proj_loc;
+mat4 proj;
+float fov, aspect, near, far;
+
 
 // textured + coloured cube
 const float cube[] = {
@@ -122,9 +127,9 @@ void render()
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
     glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
     glmc_mat4_copy(save_model, model);
-  }  
+  }
   SDL_GL_SwapWindow(window);
-  
+
 }
 
 // fixed timestep for e.g. physics
@@ -141,6 +146,17 @@ void handle_input(SDL_Event event)
     case SDL_QUIT:
       printf("quitting\n");
       running = false;
+      break;
+    case SDL_WINDOWEVENT:
+      switch(event.window.event){
+      case SDL_WINDOWEVENT_RESIZED:
+	SCREEN_WIDTH = event.window.data1;
+	SCREEN_HEIGHT = event.window.data2;
+	aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+	glmc_perspective(fov, aspect, near, far, proj);
+	glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      }
       break;
     case SDL_KEYDOWN:
       // check which key was pressed
@@ -180,7 +196,7 @@ uint32_t shader_program_setup()
   program = create_shader_program();
   attach_shader(program, vertex);
   attach_shader(program, fragment);
-  
+
   if ((err = link_program(program))) {
     fputs("shader_program_setup(): program link error", stderr);
     exit(1);
@@ -205,7 +221,7 @@ int main()
   glGenBuffers(1, &VBO);
 
   glBindVertexArray(VAO);
-  
+
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
 
@@ -242,18 +258,18 @@ int main()
   // 3d stuff
   glmc_mat4_identity(model);
   /* glmc_rotate(model, 5, (vec3){1.0f, 0.0f, 0.0f}); */
-  
+
   mat4 view;
   glmc_mat4_identity(view);
   // camera transform axes are reversed
   glmc_translate(view, (vec3){0.0f, 0.0f, -3.0f});
 
-  float fov, aspect, near, far;
+
   fov = 90.0f;
   aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
   near = 0.01f;
   far = 1000.0f;
-  mat4 proj;
+
   glmc_perspective(fov, aspect, near, far, proj);
 
   model_loc = glGetUniformLocation(program, "model");
@@ -262,7 +278,7 @@ int main()
   uint32_t view_loc = glGetUniformLocation(program, "view");
   glUniformMatrix4fv(view_loc, 1, GL_FALSE, view[0]);
 
-  uint32_t proj_loc = glGetUniformLocation(program, "proj");
+  proj_loc = glGetUniformLocation(program, "proj");
   glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
 
   // bind the one we want draw - not necessary here
@@ -296,7 +312,7 @@ int main()
     handle_input(event);
 
     while (lag-- >= MS_PER_UPDATE) update();
-    
+
     render();
     // std::cout << "elapsed time: " << elapsedTime << "\n";
     // std::cout << "framerate: " << 1000 / elapsedTime << "\n";
