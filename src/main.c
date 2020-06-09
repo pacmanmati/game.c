@@ -26,6 +26,8 @@ SDL_Window *window;
 
 uint32_t EBO, VAO, VBO;
 
+float rot = 0.0f;
+
 const float model[] = {
   // positions          // colors           // texture coords
   0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   5.0f, 5.0f, // top right
@@ -54,7 +56,7 @@ void update()
 
 }
 
-void processInput(SDL_Event event)
+void handle_input(SDL_Event event)
 {
   while (SDL_PollEvent(&event)) {
     // poll for events
@@ -68,6 +70,12 @@ void processInput(SDL_Event event)
       switch (event.key.keysym.sym) {
       case SDLK_q:
 	running = false;
+	break;
+      case SDLK_p:
+	rot += 0.1f;
+	break;
+      case SDLK_n:
+	rot -= 0.1f;
 	break;
       }
     }
@@ -109,6 +117,7 @@ int main()
   uint32_t program = shader_program_setup();
   glUseProgram(program);
 
+  // TODO abstract into some sort of render concept
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &EBO);
   glGenBuffers(1, &VBO);
@@ -131,6 +140,7 @@ int main()
   glEnableVertexAttribArray(2);
 
   // texture
+  // TODO abstract texture concept
   int width, height, nrChannels;
   unsigned char *data = stbi_load("textures/brick.jpg", &width, &height, &nrChannels, 0);
   if (!data) fputs("failed to load img.\n", stderr);
@@ -147,11 +157,37 @@ int main()
   glGenerateMipmap(GL_TEXTURE_2D);
   stbi_image_free(data);
 
-  // bind the one we want draw - not necessary here
-  glBindTexture(GL_TEXTURE_2D, texture);
+  // 3d stuff
+  mat4 model;
+  glmc_mat4_identity(model);
+  glmc_rotate(model, rot, (vec3){1.0f, 0.0f, 0.0f});
+  
+  mat4 view;
+  glmc_mat4_identity(view);
+  glmc_translate(view, (vec3){0.0f, 0.0f, -3.0f});
+
+  float fov, aspect, near, far;
+  fov = 30.0f;
+  aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+  near = 0.01f;
+  far = 10.0f;
+  mat4 proj;
+  glmc_perspective(fov, aspect, near, far, proj);
+
+  uint32_t model_loc = glGetUniformLocation(program, "model");
+  glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+
+  uint32_t view_loc = glGetUniformLocation(program, "view");
+  glUniformMatrix4fv(view_loc, 1, GL_FALSE, view[0]);
+
+  uint32_t proj_loc = glGetUniformLocation(program, "proj");
+  glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
 
   // bind the one we want draw - not necessary here
-  glBindVertexArray(VAO);
+  // glBindTexture(GL_TEXTURE_2D, texture);
+
+  // bind the one we want draw - not necessary here
+  // glBindVertexArray(VAO);
   // wireframe mode
   /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
 
@@ -171,10 +207,15 @@ int main()
       // std::cout << "skipping " << ((1000 / FPS) - elapsedTime) << "ms\n";
     }
 
-    processInput(event);
+    handle_input(event);
 
     while (lag-- >= MS_PER_UPDATE) update();
-
+    
+    if (rot) {
+      glmc_rotate(model, rot, (vec3){1.0f, 0.0f, 0.0f});
+      glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+      rot = 0;
+    }
     render();
     // std::cout << "elapsed time: " << elapsedTime << "\n";
     // std::cout << "framerate: " << 1000 / elapsedTime << "\n";
