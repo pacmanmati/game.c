@@ -8,7 +8,6 @@ unsigned int create_shader(const unsigned int type, const char *path)
   unsigned int shader = glCreateShader(type);
   const char *source = read_file(path);
   if (source) {
-    // glShaderSource(shader, 1, (const char**) source, NULL);
     glShaderSource(shader, 1, &source, NULL);
     free((char *)source); // glShaderSource copies the string so we can free immediately
     glCompileShader(shader);
