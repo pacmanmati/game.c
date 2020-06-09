@@ -103,6 +103,10 @@ vec3 cube_translates[] = {
   {0,0,-2},
   {0,1,-2},
   {0,-1,-2},
+
+  {0,0,-3},
+  {0,1,-3},
+  {0,-1,-3},
 };
 
 // variable timestep for rendering
@@ -153,7 +157,7 @@ void handle_input(SDL_Event event)
 	SCREEN_WIDTH = event.window.data1;
 	SCREEN_HEIGHT = event.window.data2;
 	aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
-	glmc_perspective(fov, aspect, near, far, proj);
+	glmc_perspective_resize(aspect, proj);
 	glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
       }
