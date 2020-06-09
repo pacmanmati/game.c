@@ -3,6 +3,7 @@
 !makefile
 !src/
 !src/*
+!src/shaders/*
 !include/
 !include/*
 !textures/
