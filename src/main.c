@@ -26,54 +26,77 @@ SDL_Window *window;
 
 uint32_t EBO, VAO, VBO;
 
-float rot = 0.0f;
+float xrot = 0.0f;
+float yrot = 0.0f;
 
 // textured + coloured cube
 const float model[] = {
   // near face
-  -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-  0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-  0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-  -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+  // x,  y,    z,       r,    g,    b,    u,    v,
+  -0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0
+  0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // 1
+  -0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // 2
+  0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 0.0f, // 3
   // left face
-  // -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-  // -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-  -0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, -1.0f, 1.0f,
-  -0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+  /* -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f, */
+  /* -0.5f, -0.5f, 0.5f,   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, */
+  -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 1.0f, // 4
+  -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 0.0f, // 5
   // right face
-  // 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-  // 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 2.0f, 1.0f,
-  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 2.0f, 0.0f,
+  /* 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f, */
+  /* 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f, */
+  0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 1.0f, // 6
+  0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 0.0f, // 7
   // top face
-  // -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-  // 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-  -0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 2.0f,  
-  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 2.0f,
+  /* -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f, */
+  /* 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f, */
+  -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 2.0f, // 8
+  0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 2.0f, // 9
   // bottom face
-  // 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-  // -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-  -0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -1.0f,
+  /* -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f, */
+  /* 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f, */
+  -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -1.0f, // 10
+  0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -1.0f, // 11
+
   // far face
-  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -1.0f,
-  0.5f, 0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -2.0f,
-  0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -2.0f,
+  /* -0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -1.0f, */
+  /* 0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -1.0f, */
+  -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -2.0f, // 12
+  0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -2.0f, // 13
 };
 
 unsigned int indices[] = {
   // clockwise
-  0, 1, 3, 
+  // near
+  0, 1, 3,
+  0, 3, 2,
+  // left
+  4, 0, 2,
+  4, 2, 5,
+  // right
+  1, 6, 7,
+  1, 7, 3,
+  // top
+  8, 9, 1,
+  8, 1, 0,
+  // bottom
+  2, 3, 11,
+  2, 11, 10,
+  // far
+  10, 11, 13,
+  10, 13, 12,
 };
 
 // variable timestep for rendering
 void render()
 {
+
   glClearColor(0.2f, 0.3f, 0.3f, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
+  
   SDL_GL_SwapWindow(window);
+  
 }
 
 // fixed timestep for e.g. physics
@@ -97,11 +120,17 @@ void handle_input(SDL_Event event)
       case SDLK_q:
 	running = false;
 	break;
-      case SDLK_p:
-	rot += 0.1f;
+      case SDLK_DOWN:
+	xrot -= 0.1f;
 	break;
-      case SDLK_n:
-	rot -= 0.1f;
+      case SDLK_UP:
+	xrot += 0.1f;
+	break;
+      case SDLK_LEFT:
+	yrot -= 0.1f;
+	break;
+      case SDLK_RIGHT:
+	yrot += 0.1f;
 	break;
       }
     }
@@ -185,17 +214,17 @@ int main()
   // 3d stuff
   mat4 model;
   glmc_mat4_identity(model);
-  glmc_rotate(model, rot, (vec3){1.0f, 0.0f, 0.0f});
+  /* glmc_rotate(model, 5, (vec3){1.0f, 0.0f, 0.0f}); */
   
   mat4 view;
   glmc_mat4_identity(view);
-  glmc_translate(view, (vec3){0.0f, 0.0f, -3.0f});
+  glmc_translate(view, (vec3){0.0f, 0.0f, -1.0f});
 
   float fov, aspect, near, far;
-  fov = 30.0f;
-  aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+  fov = 90.0f;
+  aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
   near = 0.01f;
-  far = 10.0f;
+  far = 1000.0f;
   mat4 proj;
   glmc_perspective(fov, aspect, near, far, proj);
 
@@ -209,12 +238,15 @@ int main()
   glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
 
   // bind the one we want draw - not necessary here
-  // glBindTexture(GL_TEXTURE_2D, texture);
+  /* glBindTexture(GL_TEXTURE_2D, texture); */
 
   // bind the one we want draw - not necessary here
   // glBindVertexArray(VAO);
   // wireframe mode
   /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
+
+  glEnable(GL_DEPTH_TEST);
+  glCullFace(GL_FRONT);
 
   SDL_Event event;
   Uint64 currentFrame, lastFrame = SDL_GetPerformanceCounter();
@@ -236,11 +268,18 @@ int main()
 
     while (lag-- >= MS_PER_UPDATE) update();
     
-    if (rot) {
-      glmc_rotate(model, rot, (vec3){1.0f, 0.0f, 0.0f});
+    // gimbal lock might be interesting to implement
+    if (xrot) {
+      glmc_rotate(model, xrot, (vec3){1.0f, 0.0f, 0.0f});
       glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
-      rot = 0;
+      xrot = 0;
     }
+    if (yrot) {
+      glmc_rotate(model, yrot, (vec3){0.0f, 1.0f, 0.0f});
+      glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+      yrot = 0;
+    }
+    
     render();
     // std::cout << "elapsed time: " << elapsedTime << "\n";
     // std::cout << "framerate: " << 1000 / elapsedTime << "\n";
