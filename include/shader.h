@@ -1,4 +1,4 @@
 #pragma once
 
-unsigned int create_shader(const unsigned int type, const char *path);
-void destroy_shader(const unsigned int s);
+uint32_t create_shader(const uint32_t type, const char *path);
+void destroy_shader(const uint32_t s);

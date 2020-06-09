@@ -3,9 +3,9 @@
 #include <io.h>
 #include <shader.h>
 
-unsigned int create_shader(const unsigned int type, const char *path)
+uint32_t create_shader(const uint32_t type, const char *path)
 {
-  unsigned int shader = glCreateShader(type);
+  uint32_t shader = glCreateShader(type);
   const char *source = read_file(path);
   if (source) {
     glShaderSource(shader, 1, &source, NULL);
@@ -31,7 +31,7 @@ unsigned int create_shader(const unsigned int type, const char *path)
   return 0;
 }
 
-void destroy_shader(const unsigned int shader)
+void destroy_shader(const uint32_t shader)
 {
   glDeleteShader(shader);
 }

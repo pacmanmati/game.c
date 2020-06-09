@@ -24,7 +24,7 @@ bool running = true;
 
 SDL_Window *window;
 
-unsigned int EBO, VAO, VBO;
+uint32_t EBO, VAO, VBO;
 
 const float model[] = {
   // positions          // colors           // texture coords
@@ -75,10 +75,10 @@ void processInput(SDL_Event event)
   }
 }
 
-unsigned int shader_program_setup()
+uint32_t shader_program_setup()
 {
   bool err;
-  int vertex, fragment, program;
+  uint32_t vertex, fragment, program;
   vertex = create_shader(GL_VERTEX_SHADER, "src/shaders/vertex.glsl");
   fragment = create_shader(GL_FRAGMENT_SHADER, "src/shaders/fragment.glsl");
 
@@ -106,7 +106,7 @@ int main()
 
   window = create_window(SCREEN_HEIGHT, SCREEN_WIDTH);
 
-  unsigned int program = shader_program_setup();
+  uint32_t program = shader_program_setup();
   glUseProgram(program);
 
   glGenVertexArrays(1, &VAO);
@@ -134,7 +134,7 @@ int main()
   int width, height, nrChannels;
   unsigned char *data = stbi_load("textures/brick.jpg", &width, &height, &nrChannels, 0);
   if (!data) fputs("failed to load img.\n", stderr);
-  unsigned int texture;
+  uint32_t texture;
   glGenTextures(1, &texture);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);

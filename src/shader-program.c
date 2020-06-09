@@ -6,17 +6,17 @@
 
 #include <shader-program.h>
 
-unsigned int create_shader_program()
+uint32_t create_shader_program()
 {
   return glCreateProgram();
 }
 
-void attach_shader(const unsigned int program, const unsigned int shader)
+void attach_shader(const uint32_t program, const uint32_t shader)
 {
   glAttachShader(program, shader);
 }
 
-bool link_program(const unsigned int program)
+bool link_program(const uint32_t program)
 {
   glLinkProgram(program);
   bool linked;
@@ -37,7 +37,7 @@ bool link_program(const unsigned int program)
   }
 }
 
-void destroy_shader_program(const unsigned int program)
+void destroy_shader_program(const uint32_t program)
 {
   glDeleteProgram(program);
 }
