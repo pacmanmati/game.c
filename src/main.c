@@ -4,12 +4,12 @@
 
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
-#include <GL/gl.h>
 #include <cglm/call.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <window.h>
 #include <shader.h>
 #include <shader-program.h>
 
@@ -24,7 +24,7 @@ bool running = true;
 
 SDL_Window *window;
 
-GLuint EBO, VAO, VBO;
+unsigned int EBO, VAO, VBO;
 
 const float model[] = {
   // positions          // colors           // texture coords
@@ -39,6 +39,7 @@ unsigned int indices[] = {
   1, 2, 3  // second triangle
 };
 
+// variable timestep for rendering
 void render()
 {
   glClearColor(0.2f, 0.3f, 0.3f, 1.0);
@@ -47,6 +48,7 @@ void render()
   SDL_GL_SwapWindow(window);
 }
 
+// fixed timestep for e.g. physics
 void update()
 {
 
@@ -73,7 +75,7 @@ void processInput(SDL_Event event)
   }
 }
 
-int shader_program_setup()
+unsigned int shader_program_setup()
 {
   bool err;
   int vertex, fragment, program;
@@ -102,29 +104,9 @@ int shader_program_setup()
 int main()
 {
 
-  SDL_Init(SDL_INIT_VIDEO);
+  window = create_window(SCREEN_HEIGHT, SCREEN_WIDTH);
 
-  window = SDL_CreateWindow
-    ("OpenGL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-     SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
-
-  // use opengl 4.5 core
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-  // create context
-  [[maybe_unused]]
-  SDL_GLContext mainContext = SDL_GL_CreateContext(window);
-
-  // initialise GLEW
-  GLenum err = glewInit();
-  if (GLEW_OK != err) {
-    fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-  }
-  fprintf(stdout, "GLEW %s works\n", glewGetString(GLEW_VERSION));
-
-  int program = shader_program_setup();
+  unsigned int program = shader_program_setup();
   glUseProgram(program);
 
   glGenVertexArrays(1, &VAO);
@@ -152,7 +134,7 @@ int main()
   int width, height, nrChannels;
   unsigned char *data = stbi_load("textures/brick.jpg", &width, &height, &nrChannels, 0);
   if (!data) fputs("failed to load img.\n", stderr);
-  GLuint texture;
+  unsigned int texture;
   glGenTextures(1, &texture);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);
@@ -199,12 +181,8 @@ int main()
   }
 
   printf("%s\n", glGetString(GL_VERSION));
-
   destroy_shader_program(program);
-
-  SDL_DestroyWindow(window);
-
-  SDL_Quit();
+  destroy_window(window);
 
   return 0;
 }
