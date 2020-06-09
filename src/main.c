@@ -29,8 +29,11 @@ uint32_t EBO, VAO, VBO;
 float xrot = 0.0f;
 float yrot = 0.0f;
 
+uint32_t model_loc;
+mat4 model;
+
 // textured + coloured cube
-const float model[] = {
+const float cube[] = {
   // near face
   // x,  y,    z,       r,    g,    b,    u,    v,
   -0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0
@@ -87,14 +90,39 @@ unsigned int indices[] = {
   10, 13, 12,
 };
 
+vec3 cube_translates[] = {
+  {0,0,0},
+  {0,1,0},
+  {0,-1,0},
+
+  {0,0,-2},
+  {0,1,-2},
+  {0,-1,-2},
+};
+
 // variable timestep for rendering
 void render()
 {
-
+  glmc_mat4_identity(model);
   glClearColor(0.2f, 0.3f, 0.3f, 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
-  
+
+  // gimbal lock might be interesting to implement
+  glmc_rotate(model, xrot, (vec3){1.0f, 0.0f, 0.0f});
+  glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+
+  glmc_rotate(model, yrot, (vec3){0.0f, 1.0f, 0.0f});
+  glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+
+  // save the rotation
+  mat4 save_model;
+  glmc_mat4_copy(model, save_model);
+  for (int i = 0; i < sizeof(indices) / sizeof(vec3); ++i) {
+    glmc_translate(model, cube_translates[i]);
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
+    glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
+    glmc_mat4_copy(save_model, model);
+  }  
   SDL_GL_SwapWindow(window);
   
 }
@@ -179,7 +207,7 @@ int main()
   glBindVertexArray(VAO);
   
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(model), model, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -212,13 +240,13 @@ int main()
   stbi_image_free(data);
 
   // 3d stuff
-  mat4 model;
   glmc_mat4_identity(model);
   /* glmc_rotate(model, 5, (vec3){1.0f, 0.0f, 0.0f}); */
   
   mat4 view;
   glmc_mat4_identity(view);
-  glmc_translate(view, (vec3){0.0f, 0.0f, -1.0f});
+  // camera transform axes are reversed
+  glmc_translate(view, (vec3){0.0f, 0.0f, -3.0f});
 
   float fov, aspect, near, far;
   fov = 90.0f;
@@ -228,7 +256,7 @@ int main()
   mat4 proj;
   glmc_perspective(fov, aspect, near, far, proj);
 
-  uint32_t model_loc = glGetUniformLocation(program, "model");
+  model_loc = glGetUniformLocation(program, "model");
   glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
 
   uint32_t view_loc = glGetUniformLocation(program, "view");
@@ -246,6 +274,7 @@ int main()
   /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
 
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
 
   SDL_Event event;
@@ -267,18 +296,6 @@ int main()
     handle_input(event);
 
     while (lag-- >= MS_PER_UPDATE) update();
-    
-    // gimbal lock might be interesting to implement
-    if (xrot) {
-      glmc_rotate(model, xrot, (vec3){1.0f, 0.0f, 0.0f});
-      glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
-      xrot = 0;
-    }
-    if (yrot) {
-      glmc_rotate(model, yrot, (vec3){0.0f, 1.0f, 0.0f});
-      glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
-      yrot = 0;
-    }
     
     render();
     // std::cout << "elapsed time: " << elapsedTime << "\n";
