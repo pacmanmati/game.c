@@ -1,4 +1,6 @@
 # game.c
+## screenshots
+![](showoff/images/textured-cube.png?raw=true)
 ## requires
 - gcc >= `10.3.0`
 - sdl2
