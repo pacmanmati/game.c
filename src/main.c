@@ -9,6 +9,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <camera.h>
 #include <window.h>
 #include <shader.h>
 #include <shader-program.h>
@@ -29,46 +30,37 @@ uint32_t EBO, VAO, VBO;
 float xrot = 0.0f;
 float yrot = 0.0f;
 
-uint32_t model_loc;
 mat4 model;
 
+uint32_t model_loc;
+uint32_t view_loc;
 uint32_t proj_loc;
-mat4 proj;
-float fov, aspect, near, far;
 
+const float fov = 90.0f, near = 0.1f, far = 100.0f;
+
+camera *c;
 
 // textured + coloured cube
 const float cube[] = {
   // near face
-  // x,  y,    z,       r,    g,    b,    u,    v,
   -0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0
   0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // 1
   -0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // 2
   0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 0.0f, // 3
   // left face
-  /* -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f, */
-  /* -0.5f, -0.5f, 0.5f,   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, */
   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 1.0f, // 4
   -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 0.0f, // 5
   // right face
-  /* 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f, */
-  /* 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f, */
   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 1.0f, // 6
   0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 0.0f, // 7
   // top face
-  /* -0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 1.0f, */
-  /* 0.5f, 0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 1.0f, */
   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 2.0f, // 8
   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 2.0f, // 9
   // bottom face
-  /* -0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 0.0f, 0.0f, */
-  /* 0.5f, -0.5f, 0.5f,	0.0f, 0.0f, 0.0f, 1.0f, 0.0f, */
   -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -1.0f, // 10
   0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -1.0f, // 11
 
   // far face
-  /* -0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 0.0f, -1.0f, */
-  /* 0.5f, -0.5f, -0.5f,	0.0f, 0.0f, 0.0f, 1.0f, -1.0f, */
   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -2.0f, // 12
   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -2.0f, // 13
 };
@@ -97,16 +89,6 @@ unsigned int indices[] = {
 
 vec3 cube_translates[] = {
   {0,0,0},
-  {0,1,0},
-  {0,-1,0},
-
-  {0,0,-2},
-  {0,1,-2},
-  {0,-1,-2},
-
-  {0,0,-3},
-  {0,1,-3},
-  {0,-1,-3},
 };
 
 // variable timestep for rendering
@@ -117,16 +99,16 @@ void render()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // gimbal lock might be interesting to implement
-  glmc_rotate(model, xrot, (vec3){1.0f, 0.0f, 0.0f});
+  glmc_rotate(model, glm_rad(xrot), (vec3){1.0f, 0.0f, 0.0f});
   glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
 
-  glmc_rotate(model, yrot, (vec3){0.0f, 1.0f, 0.0f});
+  glmc_rotate(model, glm_rad(yrot), (vec3){0.0f, 1.0f, 0.0f});
   glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
 
   // save the rotation
   mat4 save_model;
   glmc_mat4_copy(model, save_model);
-  for (int i = 0; i < sizeof(indices) / sizeof(vec3); ++i) {
+  for (unsigned int i = 0; i < sizeof(indices) / sizeof(vec3); ++i) {
     glmc_translate(model, cube_translates[i]);
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
     glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
@@ -156,9 +138,9 @@ void handle_input(SDL_Event event)
       case SDL_WINDOWEVENT_RESIZED:
 	SCREEN_WIDTH = event.window.data1;
 	SCREEN_HEIGHT = event.window.data2;
-	aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
-	glmc_perspective_resize(aspect, proj);
-	glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
+	float aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+	glmc_perspective_resize(aspect, c->proj_mat);
+	glUniformMatrix4fv(proj_loc, 1, GL_FALSE, c->proj_mat[0]);
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
       }
       break;
@@ -169,16 +151,16 @@ void handle_input(SDL_Event event)
 	running = false;
 	break;
       case SDLK_DOWN:
-	xrot -= 0.1f;
+	xrot -= 1.0f;
 	break;
       case SDLK_UP:
-	xrot += 0.1f;
+	xrot += 1.0f;
 	break;
       case SDLK_LEFT:
-	yrot -= 0.1f;
+	yrot -= 1.0f;
 	break;
       case SDLK_RIGHT:
-	yrot += 0.1f;
+	yrot += 1.0f;
 	break;
       }
     }
@@ -244,7 +226,8 @@ int main()
   // texture
   // TODO abstract texture concept
   int width, height, nrChannels;
-  unsigned char *data = stbi_load("textures/brick.jpg", &width, &height, &nrChannels, 0);
+  stbi_set_flip_vertically_on_load(1);
+  unsigned char *data = stbi_load("textures/512.png", &width, &height, &nrChannels, 0);
   if (!data) fputs("failed to load img.\n", stderr);
   uint32_t texture;
   glGenTextures(1, &texture);
@@ -261,29 +244,21 @@ int main()
 
   // 3d stuff
   glmc_mat4_identity(model);
-  /* glmc_rotate(model, 5, (vec3){1.0f, 0.0f, 0.0f}); */
 
-  mat4 view;
-  glmc_mat4_identity(view);
-  // camera transform axes are reversed
-  glmc_translate(view, (vec3){0.0f, 0.0f, -3.0f});
+  c = create_camera((vec3){0.0f, 0.0f, -3.0f}, (vec3){0.0f, 1.0f, 0.0f},
+			    fov, SCREEN_HEIGHT, SCREEN_WIDTH, near, far);
 
-
-  fov = 90.0f;
-  aspect = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
-  near = 0.01f;
-  far = 1000.0f;
-
-  glmc_perspective(fov, aspect, near, far, proj);
+  // move camera back
+  /* camera_translate(c, (vec3){0.0f, 0.0f, -3.0f}); */
 
   model_loc = glGetUniformLocation(program, "model");
   glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
 
-  uint32_t view_loc = glGetUniformLocation(program, "view");
-  glUniformMatrix4fv(view_loc, 1, GL_FALSE, view[0]);
+  view_loc = glGetUniformLocation(program, "view");
+  glUniformMatrix4fv(view_loc, 1, GL_FALSE, c->view_mat[0]);
 
   proj_loc = glGetUniformLocation(program, "proj");
-  glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj[0]);
+  glUniformMatrix4fv(proj_loc, 1, GL_FALSE, c->proj_mat[0]);
 
   // bind the one we want draw - not necessary here
   /* glBindTexture(GL_TEXTURE_2D, texture); */
@@ -323,6 +298,7 @@ int main()
   }
 
   printf("%s\n", glGetString(GL_VERSION));
+  destroy_camera(c);
   destroy_shader_program(program);
   destroy_window(window);
 
