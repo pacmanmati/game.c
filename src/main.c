@@ -40,6 +40,8 @@ const float fov = 90.0f, near = 0.1f, far = 100.0f;
 
 camera *c;
 
+const float ROT_SPEED = 45.0f;
+
 // textured + coloured cube
 const float cube[] = {
   // near face
@@ -63,6 +65,13 @@ const float cube[] = {
   // far face
   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -2.0f, // 12
   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -2.0f, // 13
+  /* note: the far face is flipped relative to the rest of the cube.
+     this is kind of hard to explain without a diagram, but the cube faces
+     are all oriented like the near face in the uv unwrap, however, the
+     back face is flipped when wrapping the cube. it is possible to fix this
+     using negative uv wrapping (at the cost of two extra vertices) to flip
+     the back texture but it's preferable to just uv map correctly in the first place.
+  */
 };
 
 unsigned int indices[] = {
@@ -83,6 +92,8 @@ unsigned int indices[] = {
   2, 3, 11,
   2, 11, 10,
   // far
+  /* 13, 12, 10, */
+  /* 13, 10, 11, */
   10, 11, 13,
   10, 13, 12,
 };
@@ -151,16 +162,16 @@ void handle_input(SDL_Event event)
 	running = false;
 	break;
       case SDLK_DOWN:
-	xrot -= 1.0f;
+	xrot -= ROT_SPEED;
 	break;
       case SDLK_UP:
-	xrot += 1.0f;
+	xrot += ROT_SPEED;
 	break;
       case SDLK_LEFT:
-	yrot -= 1.0f;
+	yrot -= ROT_SPEED;
 	break;
       case SDLK_RIGHT:
-	yrot += 1.0f;
+	yrot += ROT_SPEED;
 	break;
       }
     }
