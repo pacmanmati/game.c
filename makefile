@@ -22,6 +22,9 @@ OBJ := $(SRC:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
 all: $(TARGET)
 
+run: all
+	./$(TARGET)
+
 $(TARGET): $(OBJ)
 	$(CC) -g $(LDFLAGS) $^ -o $@
 
