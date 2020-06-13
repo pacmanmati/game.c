@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
@@ -40,11 +41,25 @@ const float fov = 90.0f, near = 0.1f, far = 100.0f;
 
 camera *c;
 
-const float ROT_SPEED = 45.0f;
+const float ROT_SPEED = 15.0f;
+
+vec3 up_dir = {0.0f, 1.0f, 0.0f};
+
+vec3 cam_dir;
+vec3 cam_dir_neg;
+vec3 cam_dir_perp;
+vec3 cam_dir_perp_neg;
+
+const float MOUSE_SENSITIVITY = 0.1f;
+
+const float MOVE_SPEED = 0.1f;
+
+float yaw = -90.0f, pitch = 0.0f;
 
 // textured + coloured cube
 const float cube[] = {
   // near face
+  // x , y     z         r     g     b    u     v
   -0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0
   0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // 1
   -0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // 2
@@ -61,7 +76,6 @@ const float cube[] = {
   // bottom face
   -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -1.0f, // 10
   0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -1.0f, // 11
-
   // far face
   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -2.0f, // 12
   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -2.0f, // 13
@@ -70,8 +84,7 @@ const float cube[] = {
      are all oriented like the near face in the uv unwrap, however, the
      back face is flipped when wrapping the cube. it is possible to fix this
      using negative uv wrapping (at the cost of two extra vertices) to flip
-     the back texture but it's preferable to just uv map correctly in the first place.
-  */
+     the back texture but it's preferable to just uv map correctly in the first place. */
 };
 
 unsigned int indices[] = {
@@ -92,8 +105,6 @@ unsigned int indices[] = {
   2, 3, 11,
   2, 11, 10,
   // far
-  /* 13, 12, 10, */
-  /* 13, 10, 11, */
   10, 11, 13,
   10, 13, 12,
 };
@@ -103,7 +114,7 @@ vec3 cube_translates[] = {
 };
 
 // variable timestep for rendering
-void render()
+void render(float delta_time)
 {
   glmc_mat4_identity(model);
   glClearColor(0.2f, 0.3f, 0.3f, 1.0);
@@ -130,20 +141,64 @@ void render()
 }
 
 // fixed timestep for e.g. physics
-void update()
+void update(float delta_time)
 {
 
 }
 
-void handle_input(SDL_Event event)
+void mouse_camera(int32_t x, int32_t y)
 {
+  yaw += glm_rad((float) x * MOUSE_SENSITIVITY);
+  pitch -= glm_rad((float) y * MOUSE_SENSITIVITY);
+  
+  float constraint = glm_rad(89.0f);
+  if(pitch > constraint)
+    pitch =  constraint;
+  if(pitch < -constraint)
+    pitch = -constraint;
+  
+  glmc_vec3_copy((vec3){cosf(yaw) * cosf(pitch), sinf(pitch), sinf(yaw) * cosf(pitch)}, cam_dir);
+  glmc_vec3_normalize(cam_dir);
+  glmc_vec3_negate_to(cam_dir, cam_dir_neg);
+  // glmc_vec3_ortho(cam_dir, cam_dir_perp);
+  glmc_vec3_copy(cam_dir, cam_dir_perp);
+  // cam_dir_perp[1] = 0;
+  glmc_vec3_rotate(cam_dir_perp, glm_rad(-90.0f), up_dir);
+  cam_dir_perp[1] = 0;
+  glmc_vec3_normalize(cam_dir_perp);
+  glmc_vec3_negate_to(cam_dir_perp, cam_dir_perp_neg);
+  camera_look_dir(c, cam_dir);
+  glUniformMatrix4fv(view_loc, 1, GL_FALSE, c->view_mat[0]);
+}
+
+void move_camera(camera *c, vec3 dir, float speed)
+{
+  glmc_vec3_scale(dir, speed, dir);
+  camera_translate(c, dir);
+  glmc_vec3_scale(dir, 1/speed, dir);
+}
+
+void wasd_camera(vec3 input_vel, float delta_time)
+{
+  if (input_vel[2] < 0) move_camera(c, cam_dir, MOVE_SPEED);
+  if (input_vel[2] > 0) move_camera(c, cam_dir_neg, MOVE_SPEED);
+  if (input_vel[0] < 0) move_camera(c, cam_dir_perp, MOVE_SPEED);
+  if (input_vel[0] > 0) move_camera(c, cam_dir_perp_neg, MOVE_SPEED);
+  glUniformMatrix4fv(view_loc, 1, GL_FALSE, c->view_mat[0]);
+}
+
+void handle_input(SDL_Event event, float delta_time)
+{
+  vec3 input_vel = {0.0f, 0.0f, 0.0f};
   while (SDL_PollEvent(&event)) {
     // poll for events
     switch (event.type) {
+
     case SDL_QUIT:
       printf("quitting\n");
       running = false;
       break;
+
     case SDL_WINDOWEVENT:
       switch(event.window.event){
       case SDL_WINDOWEVENT_RESIZED:
@@ -155,6 +210,7 @@ void handle_input(SDL_Event event)
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
       }
       break;
+
     case SDL_KEYDOWN:
       // check which key was pressed
       switch (event.key.keysym.sym) {
@@ -173,7 +229,31 @@ void handle_input(SDL_Event event)
       case SDLK_RIGHT:
 	yrot += ROT_SPEED;
 	break;
+
+      case SDLK_w:
+	input_vel[2] = 1;
+	wasd_camera(input_vel, delta_time);
+	break;
+      case SDLK_s:
+	input_vel[2] = -1;
+	wasd_camera(input_vel, delta_time);
+	break;
+      case SDLK_a:
+	input_vel[0] = -1;
+	wasd_camera(input_vel, delta_time);
+	break;
+      case SDLK_d:
+	input_vel[0] = 1;
+	wasd_camera(input_vel, delta_time);
+	break;
+
       }
+      break;
+
+    case SDL_MOUSEMOTION:
+      mouse_camera(event.motion.xrel, event.motion.yrel);
+      break;
+
     }
   }
 }
@@ -256,11 +336,13 @@ int main()
   // 3d stuff
   glmc_mat4_identity(model);
 
-  c = create_camera((vec3){0.0f, 0.0f, -3.0f}, (vec3){0.0f, 1.0f, 0.0f},
+  c = create_camera((vec3){0.0f, 0.0f, 3.0f}, up_dir,
 			    fov, SCREEN_HEIGHT, SCREEN_WIDTH, near, far);
 
-  // move camera back
-  /* camera_translate(c, (vec3){0.0f, 0.0f, -3.0f}); */
+  // this transformation order still confuses me
+  // camera_translate(c, (vec3){0.0f, -1.0f, 0.0f});
+  camera_look_at(c, (vec3){0.0f, 0.0f, 0.0f});
+  // camera_translate(c, (vec3){3.0f, 0.0f, 0.0f});
 
   model_loc = glGetUniformLocation(program, "model");
   glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
@@ -284,26 +366,26 @@ int main()
   glCullFace(GL_FRONT);
 
   SDL_Event event;
-  Uint64 currentFrame, lastFrame = SDL_GetPerformanceCounter();
-  double elapsedTime, lag;
+  Uint64 current_frame, last_frame = SDL_GetPerformanceCounter();
+  double elapsed_time, lag;
 
   while (running) {
-    currentFrame = SDL_GetPerformanceCounter();
+    current_frame = SDL_GetPerformanceCounter();
     // elapsed time between frames in milliseconds
-    elapsedTime = (double) (currentFrame - lastFrame) * 1000 / (double) SDL_GetPerformanceFrequency();
-    lastFrame = currentFrame;
-    lag += elapsedTime;
+    elapsed_time = (double) (current_frame - last_frame) * 1000 / (double) SDL_GetPerformanceFrequency();
+    last_frame = current_frame;
+    lag += elapsed_time;
 
-    if (CAPPED_FPS && elapsedTime < 1000 / FPS) {
-      SDL_Delay((1000 / FPS) - elapsedTime);
+    if (CAPPED_FPS && elapsed_time < 1000 / FPS) {
+      SDL_Delay((1000 / FPS) - elapsed_time);
       // std::cout << "skipping " << ((1000 / FPS) - elapsedTime) << "ms\n";
     }
 
-    handle_input(event);
+    handle_input(event, elapsed_time);
 
-    while (lag-- >= MS_PER_UPDATE) update();
+    while (lag-- >= MS_PER_UPDATE) update(elapsed_time);
 
-    render();
+    render(elapsed_time);
     // std::cout << "elapsed time: " << elapsedTime << "\n";
     // std::cout << "framerate: " << 1000 / elapsedTime << "\n";
   }

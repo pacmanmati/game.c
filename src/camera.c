@@ -28,8 +28,10 @@ void camera_window_resize(camera *c, float height, float width)
 
 void camera_translate(camera *c, vec3 translation)
 {
-  glmc_vec3_add(translation, c->pos, c->pos);
   glmc_translate(c->view_mat, translation);
+  glmc_vec3_negate(translation);
+  glmc_vec3_add(translation, c->pos, c->pos);
+  glmc_vec3_negate(translation);
 }
 
 void camera_look_at(camera *c, vec3 target)
