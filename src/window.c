@@ -17,7 +17,6 @@ SDL_Window * create_window(int height, int width)
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
   // create context
-  [[maybe_unused]]
   SDL_GLContext mainContext = SDL_GL_CreateContext(window);
   SDL_SetRelativeMouseMode(1);
   // initialise GLEW
