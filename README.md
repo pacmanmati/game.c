@@ -3,7 +3,7 @@ not much of a game (yet), more like the basics of a game engine.
 ## screenshots
 ![](showoff/images/textured-cube.png?raw=true)
 ## requires
-- gcc >= `10.3.0`
+- gcc
 - sdl2
 - opengl
 - glew
