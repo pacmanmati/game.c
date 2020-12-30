@@ -14,6 +14,7 @@
 #include <window.h>
 #include <shader.h>
 #include <shader-program.h>
+#include <mesh.h>
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
@@ -57,57 +58,57 @@ const float MOVE_SPEED = 0.1f;
 float yaw = -90.0f, pitch = 0.0f;
 
 // textured + coloured cube
-const float cube[] = {
-  // near face
-  // x , y     z         r     g     b    u     v
-  -0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0
-  0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // 1
-  -0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // 2
-  0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 0.0f, // 3
-  // left face
-  -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 1.0f, // 4
-  -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 0.0f, // 5
-  // right face
-  0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 1.0f, // 6
-  0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 0.0f, // 7
-  // top face
-  -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 2.0f, // 8
-  0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 2.0f, // 9
-  // bottom face
-  -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -1.0f, // 10
-  0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -1.0f, // 11
-  // far face
-  -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -2.0f, // 12
-  0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -2.0f, // 13
-  /* note: the far face is flipped relative to the rest of the cube.
-     this is kind of hard to explain without a diagram, but the cube faces
-     are all oriented like the near face in the uv unwrap, however, the
-     back face is flipped when wrapping the cube. it is possible to fix this
-     using negative uv wrapping (at the cost of two extra vertices) to flip
-     the back texture but it's preferable to just uv map correctly in the first place. */
-};
+// const float cube[] = {
+//   // near face
+//   // x , y     z         r     g     b    u     v
+//   -0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // 0
+//   0.5f, 0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // 1
+//   -0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // 2
+//   0.5f, -0.5f, 0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 0.0f, // 3
+//   // left face
+//   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 1.0f, // 4
+//   -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, -1.0f, 0.0f, // 5
+//   // right face
+//   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 1.0f, // 6
+//   0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 2.0f, 0.0f, // 7
+//   // top face
+//   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, 2.0f, // 8
+//   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, 2.0f, // 9
+//   // bottom face
+//   -0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -1.0f, // 10
+//   0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -1.0f, // 11
+//   // far face
+//   -0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 0.0f, -2.0f, // 12
+//   0.5f, 0.5f, -0.5f,	1.0f, 1.0f, 1.0f, 1.0f, -2.0f, // 13
+//   /* note: the far face is flipped relative to the rest of the cube.
+//      this is kind of hard to explain without a diagram, but the cube faces
+//      are all oriented like the near face in the uv unwrap, however, the
+//      back face is flipped when wrapping the cube. it is possible to fix this
+//      using negative uv wrapping (at the cost of two extra vertices) to flip
+//      the back texture but it's preferable to just uv map correctly in the first place. */
+// };
 
-unsigned int indices[] = {
-  // clockwise
-  // near
-  0, 1, 3,
-  0, 3, 2,
-  // left
-  4, 0, 2,
-  4, 2, 5,
-  // right
-  1, 6, 7,
-  1, 7, 3,
-  // top
-  8, 9, 1,
-  8, 1, 0,
-  // bottom
-  2, 3, 11,
-  2, 11, 10,
-  // far
-  10, 11, 13,
-  10, 13, 12,
-};
+// unsigned int indices[] = {
+//   // clockwise
+//   // near
+//   0, 1, 3,
+//   0, 3, 2,
+//   // left
+//   4, 0, 2,
+//   4, 2, 5,
+//   // right
+//   1, 6, 7,
+//   1, 7, 3,
+//   // top
+//   8, 9, 1,
+//   8, 1, 0,
+//   // bottom
+//   2, 3, 11,
+//   2, 11, 10,
+//   // far
+//   10, 11, 13,
+//   10, 13, 12,
+// };
 
 vec3 cube_translates[] = {
   {0,0,0},
@@ -130,7 +131,7 @@ void render(float delta_time)
   // save the rotation
   mat4 save_model;
   glmc_mat4_copy(model, save_model);
-  for (unsigned int i = 0; i < sizeof(indices) / sizeof(vec3); ++i) {
+  for (unsigned int i = 0; i < sizeof(cube_translates) / sizeof(vec3); i++) {
     glmc_translate(model, cube_translates[i]);
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, model[0]);
     glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, 0);
@@ -286,13 +287,14 @@ uint32_t shader_program_setup()
 
 int main()
 {
-
   window = create_window(SCREEN_HEIGHT, SCREEN_WIDTH);
+
+  mesh *cube = mesh_create("data/mesh/cube.obj"); // load a cube mesh
 
   uint32_t program = shader_program_setup();
   glUseProgram(program);
 
-  // TODO abstract into some sort of render concept
+  // TODO this should probably become a part of mesh
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &EBO);
   glGenBuffers(1, &VBO);
@@ -300,38 +302,38 @@ int main()
   glBindVertexArray(VAO);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * cube->vertices->length, cube->vertices->data_v, GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * cube->faces->length, cube->faces->data_v, GL_STATIC_DRAW);
+  // pos
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-  glEnableVertexAttribArray(2);
+  // // color
+  // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+  // glEnableVertexAttribArray(1);
+  // // tex
+  // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  // glEnableVertexAttribArray(2);
 
   // texture
   // TODO abstract texture concept
-  int width, height, nrChannels;
-  stbi_set_flip_vertically_on_load(1);
-  unsigned char *data = stbi_load("textures/512.png", &width, &height, &nrChannels, 0);
-  if (!data) fputs("failed to load img.\n", stderr);
-  uint32_t texture;
-  glGenTextures(1, &texture);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  // texture params
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(data);
+  // int width, height, nrChannels;
+  // stbi_set_flip_vertically_on_load(1);
+  // unsigned char *data = stbi_load("textures/512.png", &width, &height, &nrChannels, 0);
+  // if (!data) fputs("failed to load img.\n", stderr);
+  // uint32_t texture;
+  // glGenTextures(1, &texture);
+  // glActiveTexture(GL_TEXTURE0);
+  // glBindTexture(GL_TEXTURE_2D, texture);
+  // // texture params
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+  // glGenerateMipmap(GL_TEXTURE_2D);
+  // stbi_image_free(data);
 
   // 3d stuff
   glmc_mat4_identity(model);
@@ -353,13 +355,13 @@ int main()
   proj_loc = glGetUniformLocation(program, "proj");
   glUniformMatrix4fv(proj_loc, 1, GL_FALSE, c->proj_mat[0]);
 
-  // bind the one we want draw - not necessary here
+  // bind the one we want to draw - not necessary here
   /* glBindTexture(GL_TEXTURE_2D, texture); */
 
-  // bind the one we want draw - not necessary here
+  // bind the one we want to draw - not necessary here
   // glBindVertexArray(VAO);
   // wireframe mode
-  /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -378,7 +380,7 @@ int main()
 
     if (CAPPED_FPS && elapsed_time < 1000 / FPS) {
       SDL_Delay((1000 / FPS) - elapsed_time);
-      // std::cout << "skipping " << ((1000 / FPS) - elapsedTime) << "ms\n";
+      // skipping ((1000 / FPS) - elapsedTime) ms
     }
 
     handle_input(event, elapsed_time);
@@ -386,8 +388,6 @@ int main()
     while (lag-- >= MS_PER_UPDATE) update(elapsed_time);
 
     render(elapsed_time);
-    // std::cout << "elapsed time: " << elapsedTime << "\n";
-    // std::cout << "framerate: " << 1000 / elapsedTime << "\n";
   }
 
   printf("%s\n", glGetString(GL_VERSION));

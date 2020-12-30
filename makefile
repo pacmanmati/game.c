@@ -29,3 +29,4 @@ $(OBJDIR):
 
 clean:
 	$(RM) -r $(OBJDIR)
+	$(RM) $(TARGET)
